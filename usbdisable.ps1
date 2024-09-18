@@ -12,8 +12,6 @@ if (!([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]
     exit
 }
 
-
-
 # Function to set registry values
 function Set-RegistryValue {
     param (
@@ -26,6 +24,17 @@ function Set-RegistryValue {
         New-Item -Path $Path -Force | Out-Null
     }
     Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type $Type
+}
+
+# Function to remove registry values
+function Remove-RegistryValue {
+    param (
+        [string]$Path,
+        [string]$Name
+    )
+    if (Test-Path $Path) {
+        Remove-ItemProperty -Path $Path -Name $Name -ErrorAction SilentlyContinue
+    }
 }
 
 # Disable USB storage devices by setting Group Policy and Registry values
@@ -54,6 +63,22 @@ function Allow-USBDevices {
     $policyPath = "HKLM:\Software\Policies\Microsoft\Windows\DeviceInstall\Restrictions"
 
     Set-RegistryValue -Path $policyPath -Name "AllowHardwareIds" -Value $deviceHardwareIds -Type "MultiString"
+}
+
+# Restore USB storage devices to default settings
+function Restore-USBSettings {
+    Write-Output "Restoring default USB settings..."
+
+    # Restore Group Policy Settings
+    $gpoPath = "HKLM:\Software\Policies\Microsoft\Windows\RemovableStorageDevices"
+
+    Remove-RegistryValue -Path $gpoPath -Name "Deny_All"
+    Remove-RegistryValue -Path $gpoPath -Name "Allow_Floppy"
+    Remove-RegistryValue -Path $gpoPath -Name "Allow_CDROM"
+    Remove-RegistryValue -Path $gpoPath -Name "Allow_Tape"
+
+    # Restore Registry Settings
+    Set-RegistryValue -Path "HKLM:\SYSTEM\CurrentControlSet\Services\USBSTOR" -Name "Start" -Value 3
 }
 
 # Function to process Option 1: Disable using HID registration
@@ -94,12 +119,27 @@ function Process-DisableNormal {
     }
 }
 
+# Function to process Option 3: Restore default USB settings
+function Process-RestoreDefault {
+    Write-Output "This option will restore the default USB settings, undoing all previous changes."
+    $confirmation = Read-Host "Press 'Y' to continue or 'N' to cancel"
+
+    if ($confirmation -eq 'Y') {
+        Restore-USBSettings
+
+        Write-Output "Restoration complete. Please restart the computer for the changes to take effect."
+    } else {
+        Write-Output "Operation cancelled."
+    }
+}
+
 # Main script execution
 Write-Output "Please choose an option:"
 Write-Output "1. Disable all USB and removable storage devices while registering the keyboard and mouse through HID protocol."
 Write-Output "2. Disable all removable storage devices while allowing the keyboard and mouse to function normally."
+Write-Output "3. Restore default USB settings."
 
-$choice = Read-Host "Enter your choice (1 or 2)"
+$choice = Read-Host "Enter your choice (1, 2, or 3)"
 
 switch ($choice) {
     '1' {
@@ -108,7 +148,10 @@ switch ($choice) {
     '2' {
         Process-DisableNormal
     }
+    '3' {
+        Process-RestoreDefault
+    }
     default {
-        Write-Output "Invalid choice. Please run the script again and select option 1 or 2."
+        Write-Output "Invalid choice. Please run the script again and select option 1, 2, or 3."
     }
 }
