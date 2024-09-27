@@ -2,7 +2,7 @@
 # Created by Joswin Dsouza
 # Copyright (c) 2024 Joswin Dsouza. All rights reserved.
 # Users are granted the rights to use, modify, and distribute this script,  
-# provided that this line and the preceding lines and the line #7(`$authorName = "Joswin Dsouza"` remain intact.)
+# provided that this line and the preceding lines and the line #7(`$authorName = "Joswin Dsouza")  remain intact.
 
 $authorName = "Joswin Dsouza"
 $scriptMessage = "Executing script created by $authorName..."
